@@ -5,6 +5,18 @@ from sklearn.metrics.pairwise import cosine_similarity
 import fitz  # PyMuPDF
 
 def extract_text(path):
+    """Extract text from a PDF document.
+
+    Args:
+        path(str): Path to the PDF document.
+
+    Returns:
+        str: Extracted text from the PDF document.
+
+    Raises:
+        FileNotFoundError: Raised when the specified file is not found.
+        fitz.fitz.PyMuPDFError: Raised if there is an error during PDF processing.
+    """
     text = ""
     with fitz.open(path) as doc:
         for page in doc:
