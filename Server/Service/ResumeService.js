@@ -3,15 +3,33 @@ import path from "path";
 
 const processUploads = (req, res) => {
   try {
+    // Check if files exist in the request
+    if (!req.files || !req.files["jobDescription"] || !req.files["resumes"]) {
+      return res.status(400).json({ error: "Missing required files" });
+    }
+
     const jdPath = req.files["jobDescription"][0].path;
-    const resumePaths = req.files["resumes"].map(file => file.path);
+    
+    // Ensure resumes is always an array
+    const resumeFiles = Array.isArray(req.files["resumes"]) 
+      ? req.files["resumes"] 
+      : [req.files["resumes"]];
+    
+    const resumePaths = resumeFiles.map(file => file.path);
 
-    const command = `python3 ML/resumeMatcher.py "${jdPath}" ${resumePaths.join(" ")}`;
+    if (resumePaths.length === 0) {
+      return res.status(400).json({ error: "No resume files uploaded" });
+    }
 
+    // Build command with proper quotation for paths (important for paths with spaces)
+    const command = `python ML/resumeMatcher.py "${jdPath}" ${resumePaths.map(p => `"${p}"`).join(" ")}`;
+    
+    console.log("Executing:", command);
+    
     exec(command, (error, stdout, stderr) => {
       if (error) {
         console.error("Python error:", stderr);
-        return res.status(500).json({ error: "ML processing failed" });
+        return res.status(500).json({ error: "ML processing failed", details: stderr });
       }
 
       try {
@@ -23,7 +41,8 @@ const processUploads = (req, res) => {
       }
     });
   } catch (err) {
-    res.status(500).json({ error: "Server error" });
+    console.error("Server error:", err);
+    res.status(500).json({ error: "Server error", details: err.message });
   }
 };
 
